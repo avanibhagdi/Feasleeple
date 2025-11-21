@@ -91,6 +91,10 @@ def save_tasks():
         json.dump(data_to_save, f, indent=4)
 
 # --- 2. SESSION STATE Initialization ---
+if 'audit_start' not in st.session_state:
+    st.session_state.audit_start = date.today()
+if 'audit_end' not in st.session_state:
+    st.session_state.audit_end = date.today() + timedelta(weeks=8)
 if 'tasks' not in st.session_state:
     st.session_state.tasks = load_tasks()
 if 'audit_ran' not in st.session_state:
@@ -415,6 +419,7 @@ if st.session_state.audit_ran and not st.session_state.viz_df.empty:
 else:
 
     st.info("Run the audit to generate the visualization.")
+
 
 
 
