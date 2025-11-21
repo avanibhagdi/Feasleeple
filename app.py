@@ -22,7 +22,7 @@ PALETTE = ['#4DB6AC', '#9575CD', '#B0BEC5', '#FF8A65',
 st.set_page_config(
     layout="wide",
     initial_sidebar_state="auto",
-    page_title="Sleep Opportunity Calculator PoC",
+    page_title="Feasleeple",
     menu_items=None
 )
 
@@ -438,6 +438,7 @@ if st.session_state.audit_ran and not st.session_state.viz_df.empty:
 else:
 
     st.info("Run the audit to generate the visualization.")
+
 
 
 
