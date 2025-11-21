@@ -292,6 +292,14 @@ with col3:
 
     if st.session_state.tasks:
         st.caption("Click the trash icon to delete a single task.")
+        col_name, col_time, col_days, col_start, col_end, col_delete = st.columns([1.5, 0.5, 1.5, 1.5, 1.5, 0.5])
+        with col_name: st.markdown("**Task**")
+        with col_time: st.markdown("**Hrs**")
+        with col_days: st.markdown("**Days**")
+        with col_start: st.markdown("**Start**")
+        with col_end: st.markdown("**End**")
+        with col_delete: st.markdown(" ")
+        st.markdown("---")
         
         for i, task in enumerate(st.session_state.tasks):
             col_name, col_time, col_days, col_delete = st.columns([1.5, 0.5, 2.5, 0.5])
@@ -303,6 +311,10 @@ with col3:
             with col_days:
                 days_str = ", ".join(task['days'])
                 st.markdown(f"<span style='font-size: smaller;'>{days_str}</span>", unsafe_allow_html=True)
+            with col_start:
+                st.markdown(f"<span style='font-size: smaller;'>{task['start']}</span>", unsafe_allow_html=True)
+            with col_end:
+                st.markdown(f"<span style='font-size: smaller;'>{task['end']}</span>", unsafe_allow_html=True)
             with col_delete:
                 st.button("🗑️", key=f"delete_{i}", on_click=delete_task, args=(i,))
 
@@ -379,4 +391,5 @@ if st.session_state.audit_ran and not st.session_state.viz_df.empty:
     
     st.altair_chart(chart, use_container_width=True)
 else:
+
     st.info("Run the audit to generate the visualization.")
