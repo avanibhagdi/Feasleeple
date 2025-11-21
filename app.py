@@ -9,12 +9,11 @@ import os
 FILE_PATH = "tasks_data.json" 
 MAX_WORK_CAPACITY = 13.0 
 DAY_OPTIONS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-PALETTE = [
-    '#90CAF9', '#A5D6A7', '#B39DDB', '#FFD54F', '#4DD0E1', '#81C784',
-    '#C5E1A5', '#B0BEC5', '#FFAB91', '#4DB6AC', '#FFCDD2', '#DCE775',
-    '#B3E5FC', '#A1887F', '#AED581', '#FFECB3', '#9FA8DA', '#9575CD',
-    '#80CBC4', '#FF8A65'
-]
+PALETTE = ['#4DB6AC', '#9575CD', '#B0BEC5', '#FF8A65',
+           '#4DD0E1', '#9FA8DA', '#B39DDB', '#FFAB91',
+           '#80CBC4', '#A1887F', '#B3E5FC', '#FFCDD2',
+           '#81C784', '#A5D6A7', '#C5E1A5', '#FFD54F',
+           '#90CAF9', '#AED581', '#DCE775', '#FFECB3']
 
 st.set_page_config(
     layout="wide",
@@ -413,5 +412,6 @@ if st.session_state.audit_ran and not st.session_state.viz_df.empty:
 else:
 
     st.info("Run the audit to generate the visualization.")
+
 
 
