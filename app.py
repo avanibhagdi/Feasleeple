@@ -166,12 +166,12 @@ def run_audit(audit_start, audit_end):
 # 📌 STREAMLIT LAYOUT
 # ==============================================================================
 
-st.title("😴 Sleep Opportunity Calculator PoC")
+st.title("😴 Feasleeple")
 st.markdown(f"Maximum daily capacity enforced: **{MAX_WORK_CAPACITY} hours**.")
 st.markdown("---")
 
 st.info("""
-**How to Use the Sleep Opportunity Calculator (PoC):**
+**How to Use Feasleeple**
 
 This tool helps you check your schedule's **feasibility** against a strict **13-hour maximum daily work capacity** (ensuring a 9-hour minimum sleep + 2-hour buffer).
 """)
@@ -438,6 +438,7 @@ if st.session_state.audit_ran and not st.session_state.viz_df.empty:
 else:
 
     st.info("Run the audit to generate the visualization.")
+
 
 
 
