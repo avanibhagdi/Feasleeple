@@ -214,14 +214,14 @@ with col1:
             default=["Monday", "Tuesday"]
         )
         
-        # --- Single-Day / Range Logic ---
+        # --- Single-Day / Range Logic (STABLE AND CONDITIONAL) ---
         st.markdown("##### Schedule Frequency")
 
         is_one_time = st.checkbox("This is a one-time event (single day)")
 
         if is_one_time:
             # Option 1: Single Date Input
-            single_date = st.date_input("Select Event Date", value=date.today())
+            single_date = st.date_input("Select Event Date", value=date.today(), key='single_date_picker')
             task_start_date = single_date
             task_end_date = single_date
             
@@ -230,6 +230,7 @@ with col1:
             task_dates = st.date_input(
                 "Start and End Date Range (Inclusive)",
                 [date.today(), date.today() + timedelta(weeks=4)],
+                key='range_picker'
             )
 
             # CRITICAL FIX: Safely unpack the list to prevent ValueError on startup
@@ -250,14 +251,15 @@ with col1:
             if task_name in existing_names:
                 st.error(f"Task '{task_name}' already exists. Please use a unique name."); is_valid = False
             if not task_days: st.error("Please select at least one day for the task."); is_valid = False
+            
+            # Check date logic using the final calculated variables
             if task_start_date > task_end_date: 
                 st.error("Start date must be before or the same as the end date."); is_valid = False
 
-            # --- NEW CONSISTENCY ENFORCEMENT (The Fix) ---
+            # --- NEW CONSISTENCY ENFORCEMENT ---
             if is_valid and not is_one_time: 
                 invalid_days = []
                 for day in task_days:
-                    # Check if the selected day (e.g., Monday) actually exists in the date range
                     if not check_day_in_range(task_start_date, task_end_date, day):
                         invalid_days.append(day)
                 
@@ -275,6 +277,9 @@ with col1:
                 save_tasks()
                 st.session_state.audit_ran = False
                 st.success(f"Task '{task_name}' ({task_unit_time}h) added.")
+
+    st.markdown("---")
+    st.caption(f"**Total Tasks Loaded:** {len(st.session_state.tasks)}")
 # ==============================================================================
 # 📌 PANEL 2: Time Slicing and Audit Trigger
 # ==============================================================================
@@ -454,6 +459,7 @@ if st.session_state.audit_ran and not st.session_state.viz_df.empty:
 else:
 
     st.info("Run the audit to generate the visualization.")
+
 
 
 
