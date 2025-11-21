@@ -285,50 +285,70 @@ with col3:
 
     st.subheader("Current Tasks")
     
+    # Define the delete function within the scope of col3 (which is fine)
     def delete_task(index):
+        # Remove the task at the specified index
         del st.session_state.tasks[index]
-        save_tasks() 
+        save_tasks()  # Save changes to JSON
         st.session_state.audit_ran = False
+        # st.rerun is removed as it's a no-op/unnecessary
 
     if st.session_state.tasks:
         st.caption("Click the trash icon to delete a single task.")
-        col_name, col_time, col_days, col_start, col_end, col_delete = st.columns([1.5, 0.5, 1.5, 1.5, 1.5, 0.5])
+        
+        # 1. Define the 6-column layout for the header
+        # [Name, Time, Days, Start Date, End Date, Delete Icon]
+        col_name, col_time, col_days, col_start, col_end, col_delete = st.columns([1.5, 0.5, 1.5, 1.5, 1.5, 0.5]) 
+        
+        # Add a header row for clarity (Using the column definitions from above)
         with col_name: st.markdown("**Task**")
         with col_time: st.markdown("**Hrs**")
         with col_days: st.markdown("**Days**")
         with col_start: st.markdown("**Start**")
         with col_end: st.markdown("**End**")
-        with col_delete: st.markdown(" ")
-        st.markdown("---")
-        
-        for i, task in enumerate(st.session_state.tasks):
-            col_name, col_time, col_days, col_delete = st.columns([1.5, 0.5, 2.5, 0.5])
+        with col_delete: st.markdown(" ") # Spacer for trash icon
 
-            with col_name:
+        st.markdown("---") # Separator between header and tasks
+
+        # 2. Iterate and display each task row (using unique keys for alignment)
+        for i, task in enumerate(st.session_state.tasks):
+            # REDEFINE COLUMNS INSIDE THE LOOP with a unique key
+            col_name_i, col_time_i, col_days_i, col_start_i, col_end_i, col_delete_i = st.columns([1.5, 0.5, 1.5, 1.5, 1.5, 0.5], key=f'row_{i}')
+
+            # Task Name
+            with col_name_i:
                 st.markdown(f"**{task['name']}**")
-            with col_time:
+            # Time
+            with col_time_i:
                 st.markdown(f"{task['time']}h")
-            with col_days:
+            # Days
+            with col_days_i:
                 days_str = ", ".join(task['days'])
                 st.markdown(f"<span style='font-size: smaller;'>{days_str}</span>", unsafe_allow_html=True)
-            with col_start:
+            # Start Date
+            with col_start_i:
                 st.markdown(f"<span style='font-size: smaller;'>{task['start']}</span>", unsafe_allow_html=True)
-            with col_end:
+            # End Date
+            with col_end_i:
                 st.markdown(f"<span style='font-size: smaller;'>{task['end']}</span>", unsafe_allow_html=True)
-            with col_delete:
+                
+            # Delete Button
+            with col_delete_i:
                 st.button("🗑️", key=f"delete_{i}", on_click=delete_task, args=(i,))
 
         st.markdown("---")
         
+        # KEEP the "Clear All" button for mass deletion
         if st.button("Clear ALL Tasks", key="clear_tasks"):
             st.session_state.tasks = []
             st.session_state.audit_ran = False
-            save_tasks() 
+            save_tasks()
     else:
         st.info("No tasks added yet.")
         
     st.markdown("---")
-
+    
+    # ... (Rest of the Overloaded Days display logic follows here) ...
     st.subheader("Overloaded Days")
     if st.session_state.audit_ran and not st.session_state.audit_df.empty:
         overloaded_days_df = st.session_state.audit_df[st.session_state.audit_df['Overload_Flag'] == 'Overload Day'].copy()
@@ -393,3 +413,4 @@ if st.session_state.audit_ran and not st.session_state.viz_df.empty:
 else:
 
     st.info("Run the audit to generate the visualization.")
+
