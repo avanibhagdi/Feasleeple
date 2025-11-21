@@ -202,7 +202,7 @@ with col1:
             default=["Monday", "Tuesday"]
         )
         
-        # --- Single-Day / Range Logic (REPLACES OLD DATE INPUTS) ---
+        # --- Single-Day / Range Logic ---
         st.markdown("##### Schedule Frequency")
 
         is_one_time = st.checkbox("This is a one-time event (single day)")
@@ -212,14 +212,24 @@ with col1:
             single_date = st.date_input("Select Event Date", value=date.today())
             task_start_date = single_date
             task_end_date = single_date
-            # For one-time events, the 'Days of the week' selection is ignored in the backend logic, 
-            # but we keep it available for flexibility.
+            
         else:
-            # Option 2: Date Range Input
-            task_start_date, task_end_date = st.date_input(
+            # Option 2: Date Range Input (FIXED FOR INITIALIZATION CRASH)
+            
+            # Safely capture the list of dates from the widget
+            task_dates = st.date_input(
                 "Start and End Date Range (Inclusive)",
                 [date.today(), date.today() + timedelta(weeks=4)],
             )
+
+            # CRITICAL FIX: Safely unpack the list
+            if len(task_dates) == 2:
+                task_start_date = task_dates[0]
+                task_end_date = task_dates[1]
+            else:
+                # If only one date is present (on initial load), use it for both start and end
+                task_start_date = task_dates[0]
+                task_end_date = task_dates[0]
         # -----------------------------------------------------------
 
         if st.form_submit_button("Add Task"):
@@ -233,6 +243,7 @@ with col1:
             if task_name in existing_names:
                 st.error(f"Task '{task_name}' already exists. Please use a unique name."); is_valid = False
             
+            # Note: The 'Days' check is kept even for one-time events for consistent data structure.
             if not task_days:
                 st.error("Please select at least one day for the task."); is_valid = False
             
@@ -246,7 +257,6 @@ with col1:
                     "name": task_name,
                     "time": task_unit_time,
                     "days": task_days,
-                    # CRITICAL: Use the new variables defined above
                     "start": task_start_date, 
                     "end": task_end_date      
                 })
@@ -433,6 +443,7 @@ if st.session_state.audit_ran and not st.session_state.viz_df.empty:
 else:
 
     st.info("Run the audit to generate the visualization.")
+
 
 
 
