@@ -222,7 +222,7 @@ with col1:
                 [date.today(), date.today() + timedelta(weeks=4)],
             )
 
-            # CRITICAL FIX: Safely unpack the list
+            # CRITICAL FIX: Safely unpack the list to prevent ValueError on startup
             if len(task_dates) == 2:
                 task_start_date = task_dates[0]
                 task_end_date = task_dates[1]
@@ -237,15 +237,10 @@ with col1:
             is_valid = True
             
             # --- Validation Checks ---
-            if not task_name:
-                st.error("Please enter a task name."); is_valid = False
-            
+            if not task_name: st.error("Please enter a task name."); is_valid = False
             if task_name in existing_names:
                 st.error(f"Task '{task_name}' already exists. Please use a unique name."); is_valid = False
-            
-            # Note: The 'Days' check is kept even for one-time events for consistent data structure.
-            if not task_days:
-                st.error("Please select at least one day for the task."); is_valid = False
+            if not task_days: st.error("Please select at least one day for the task."); is_valid = False
             
             # Check date logic using the final calculated variables
             if task_start_date > task_end_date: 
@@ -443,6 +438,7 @@ if st.session_state.audit_ran and not st.session_state.viz_df.empty:
 else:
 
     st.info("Run the audit to generate the visualization.")
+
 
 
 
