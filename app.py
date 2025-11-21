@@ -4,11 +4,13 @@ import altair as alt
 from datetime import date, timedelta
 import json
 import os
-import streamlit.runtime
+# CRITICAL IMPORT FIX: Use the specific module for reliable session ID access
+import streamlit.runtime.scriptrunner as st_scriptrunner 
+# Note: You can remove 'from datetime import date' if it was a duplicate import
 
 # --- 0. CONFIGURATION (Constants) ---
-FILE_PATH = "tasks_data.json" 
-MAX_WORK_CAPACITY = 13.0 
+FILE_PATH = "tasks_data.json"  # Note: This is now only a base name
+MAX_WORK_CAPACITY = 13.0
 DAY_OPTIONS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 PALETTE = ['#4DB6AC', '#9575CD', '#B0BEC5', '#FF8A65',
            '#4DD0E1', '#9FA8DA', '#B39DDB', '#FFAB91',
@@ -16,6 +18,7 @@ PALETTE = ['#4DB6AC', '#9575CD', '#B0BEC5', '#FF8A65',
            '#81C784', '#A5D6A7', '#C5E1A5', '#FFD54F',
            '#90CAF9', '#AED581', '#DCE775', '#FFECB3']
 
+# --- PAGE CONFIG (Correctly Placed) ---
 st.set_page_config(
     layout="wide",
     initial_sidebar_state="auto",
@@ -23,53 +26,51 @@ st.set_page_config(
     menu_items=None
 )
 
+# ====================================================================
+# --- 1. UTILITY AND PERSISTENCE FUNCTIONS (With Session ID Fix) ---
+# ====================================================================
+
+def get_user_file_path():
+    """
+    Retrieves the unique session ID using the standard method 
+    and constructs a unique file path for each user.
+    """
+    # CRITICAL FIX: Use get_script_run_ctx() which is safe in deployed environments
+    ctx = st_scriptrunner.get_script_run_ctx()
+    if ctx is None:
+        session_id = "local_debug" # Fallback for local testing
+    else:
+        session_id = ctx.session_id
+        
+    return f"tasks_{session_id}.json"
+
 def format_ordinal_date(date_index):
-    """Converts a Pandas Timestamp to the '1st December 2025' format."""
-    if pd.isna(date_index):
-        return "Date N/A"
-    
+    # ... (Keep this function as is) ...
+    if pd.isna(date_index): return "Date N/A"
     date_obj = date_index.to_pydatetime().date()
     day = date_obj.day
     month_name = date_obj.strftime('%B')
     year = date_obj.year
-    
-    if 11 <= day <= 13:
-        suffix = 'th'
-    else:
-        suffixes = {1: 'st', 2: 'nd', 3: 'rd'}
-        suffix = suffixes.get(day % 10, 'th')
-            
+    if 11 <= day <= 13: suffix = 'th'
+    else: suffixes = {1: 'st', 2: 'nd', 3: 'rd'}; suffix = suffixes.get(day % 10, 'th')
     return f"{day}{suffix} {month_name} {year}"
 
 def format_hours_minutes(decimal_hours):
-    """Converts a decimal hour value (e.g., 1.5) to '1 hour 30 minutes'."""
-    if decimal_hours <= 0:
-        return "0 minutes"
-            
+    # ... (Keep this function as is) ...
+    if decimal_hours <= 0: return "0 minutes"
     hours = int(decimal_hours)
     minutes = round((decimal_hours - hours) * 60)
-        
     parts = []
-    if hours > 0:
-        parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
-    if minutes > 0:
-        parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
-        
+    if hours > 0: parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+    if minutes > 0: parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
     return " ".join(parts) or "0 minutes"
-# --- ADD THIS HELPER FUNCTION ---
-def get_user_file_path():
-    # Use the unique session ID to create a unique file name for each user
-    session_id = st.runtime.get_instance().session_id
-    return f"tasks_{session_id}.json"
 
-# --- REVISED LOAD FUNCTION ---
 def load_tasks():
     file_path = get_user_file_path()
     if os.path.exists(file_path):
         try:
             with open(file_path, 'r') as f:
                 data = json.load(f)
-                # Ensure dates are converted back (as before)
                 for task in data:
                     task['start'] = date.fromisoformat(task['start'])
                     task['end'] = date.fromisoformat(task['end'])
@@ -78,31 +79,24 @@ def load_tasks():
             return []
     return []
 
-# --- REVISED SAVE FUNCTION ---
 def save_tasks():
     file_path = get_user_file_path()
     data_to_save = []
-    
     for task in st.session_state.tasks:
         task_copy = task.copy()
         task_copy['start'] = task_copy['start'].isoformat()
         task_copy['end'] = task_copy['end'].isoformat()
         data_to_save.append(task_copy)
-        
     with open(file_path, 'w') as f:
         json.dump(data_to_save, f, indent=4)
 
-# --- SESSION STATE Initialization ---
+# --- 2. SESSION STATE Initialization ---
 if 'tasks' not in st.session_state:
     st.session_state.tasks = load_tasks()
 if 'audit_ran' not in st.session_state:
     st.session_state.audit_ran = False
 if 'audit_df' not in st.session_state:
     st.session_state.audit_df = pd.DataFrame()
-if 'audit_start' not in st.session_state:
-    st.session_state.audit_start = date.today()
-if 'audit_end' not in st.session_state:
-    st.session_state.audit_end = date.today() + timedelta(weeks=8)
 if 'viz_df' not in st.session_state:
     st.session_state.viz_df = pd.DataFrame()
 
@@ -421,6 +415,7 @@ if st.session_state.audit_ran and not st.session_state.viz_df.empty:
 else:
 
     st.info("Run the audit to generate the visualization.")
+
 
 
 
