@@ -4,6 +4,7 @@ import altair as alt
 from datetime import date, timedelta
 import json
 import os
+import streamlit.runtime
 
 # --- 0. CONFIGURATION (Constants) ---
 FILE_PATH = "tasks_data.json" 
@@ -55,32 +56,40 @@ def format_hours_minutes(decimal_hours):
         parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
         
     return " ".join(parts) or "0 minutes"
+# --- ADD THIS HELPER FUNCTION ---
+def get_user_file_path():
+    # Use the unique session ID to create a unique file name for each user
+    session_id = st.runtime.get_instance().session_id
+    return f"tasks_{session_id}.json"
 
+# --- REVISED LOAD FUNCTION ---
 def load_tasks():
-    """Loads tasks from a local JSON file."""
-    if os.path.exists(FILE_PATH):
+    file_path = get_user_file_path()
+    if os.path.exists(file_path):
         try:
-            with open(FILE_PATH, 'r') as f:
+            with open(file_path, 'r') as f:
                 data = json.load(f)
-                
+                # Ensure dates are converted back (as before)
                 for task in data:
                     task['start'] = date.fromisoformat(task['start'])
                     task['end'] = date.fromisoformat(task['end'])
                 return data
-        except (json.JSONDecodeError, KeyError, FileNotFoundError, TypeError):
+        except (json.JSONDecodeError, KeyError, FileNotFoundError):
             return []
     return []
 
+# --- REVISED SAVE FUNCTION ---
 def save_tasks():
-    """Saves tasks from session state to a local JSON file."""
+    file_path = get_user_file_path()
     data_to_save = []
+    
     for task in st.session_state.tasks:
         task_copy = task.copy()
         task_copy['start'] = task_copy['start'].isoformat()
         task_copy['end'] = task_copy['end'].isoformat()
         data_to_save.append(task_copy)
         
-    with open(FILE_PATH, 'w') as f:
+    with open(file_path, 'w') as f:
         json.dump(data_to_save, f, indent=4)
 
 # --- SESSION STATE Initialization ---
@@ -412,6 +421,7 @@ if st.session_state.audit_ran and not st.session_state.viz_df.empty:
 else:
 
     st.info("Run the audit to generate the visualization.")
+
 
 
 
