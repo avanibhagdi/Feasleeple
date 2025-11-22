@@ -238,6 +238,7 @@ with col1:
                 task_start_date = task_dates[0]
                 task_end_date = task_dates[1]
             else:
+                # If only one date is present (on initial load), use it for both start and end
                 task_start_date = task_dates[0]
                 task_end_date = task_dates[0]
         # -----------------------------------------------------------
@@ -256,7 +257,7 @@ with col1:
             if task_start_date > task_end_date: 
                 st.error("Start date must be before or the same as the end date."); is_valid = False
 
-            # --- NEW CONSISTENCY ENFORCEMENT ---
+            # --- CONSISTENCY ENFORCEMENT ---
             if is_valid and not is_one_time: 
                 invalid_days = []
                 for day in task_days:
@@ -277,9 +278,6 @@ with col1:
                 save_tasks()
                 st.session_state.audit_ran = False
                 st.success(f"Task '{task_name}' ({task_unit_time}h) added.")
-
-    st.markdown("---")
-    st.caption(f"**Total Tasks Loaded:** {len(st.session_state.tasks)}")
 # ==============================================================================
 # 📌 PANEL 2: Time Slicing and Audit Trigger
 # ==============================================================================
@@ -464,6 +462,7 @@ if st.session_state.audit_ran and not st.session_state.viz_df.empty:
 else:
 
     st.info("Run the audit to generate the visualization.")
+
 
 
 
