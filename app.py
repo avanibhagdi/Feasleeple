@@ -39,7 +39,6 @@ def get_user_file_path():
     # FIXED FILENAME
     return os.path.join(DATA_SUBDIR, "tasks_master.json")
 
-# --- CRITICAL FIX: Use st.cache_resource for reliable loading on rerun ---
 @st.cache_resource(ttl=3600) 
 def load_tasks():
     """Loads tasks from a FIXED file path reliably."""
@@ -72,12 +71,12 @@ def save_tasks():
     with open(file_path, 'w') as f:
         json.dump(data_to_save, f, indent=4)
         
-    # --- CRITICAL FIX: Clear the cached version to force reload on next rerun/refresh ---
+    # Clear the cached version to force reload on next rerun/refresh
     load_tasks.clear()
 
 # --- CALLBACK FUNCTIONS FOR PERSISTENCE ---
 
-# NOTE: add_task_callback is DELETED/removed. Its logic is moved to the form submit block.
+# Note: Add Task logic is inside the submit block (Panel 1)
 
 def delete_task(index):
     """Callback triggered on 'Delete' button click."""
@@ -94,8 +93,17 @@ def clear_tasks_callback():
     st.session_state.audit_ran = False
     st.toast("All tasks cleared and saved.")
 
-def save_edit_callback(task_index_to_edit, new_name, new_time, new_days, new_dates):
-    """Callback triggered on 'Save Changes' submit."""
+# --- CRITICAL FIX HERE: Read from st.session_state directly via widget keys ---
+def save_edit_callback(task_index_to_edit):
+    """Callback triggered on 'Save Changes' submit. Reads form values directly from session state."""
+    
+    # 1. Read values using their widget keys
+    new_name = st.session_state['e_name']
+    new_time = st.session_state['e_time']
+    new_days = st.session_state['e_days']
+    new_dates = st.session_state['e_dates'] 
+
+    # 2. Unpack dates
     if len(new_dates) == 2:
         new_start_date = new_dates[0]
         new_end_date = new_dates[1]
@@ -104,18 +112,21 @@ def save_edit_callback(task_index_to_edit, new_name, new_time, new_days, new_dat
         new_end_date = new_dates[0]
 
     if new_start_date > new_end_date:
-        st.error("Save Failed: Start date cannot be after the end date.")
+        st.warning("Save Failed: Start date cannot be after the end date. Try again.")
         return 
 
+    # 3. Update the tasks list
     st.session_state.tasks[task_index_to_edit].update({
         "name": new_name,
         "time": new_time,
         "days": new_days,
-        "start": new_start_date,
-        "end": new_end_date
+        "start": new_start_date, 
+        "end": new_end_date      
     })
+    
+    # 4. Save and close
     save_tasks()
-    st.session_state.edit_index = None # Close the form
+    st.session_state.edit_index = None 
     st.toast(f"Task '{new_name}' updated and saved!")
 
 
@@ -169,7 +180,6 @@ def format_hours_minutes(decimal_hours):
 
 # --- 3. SESSION STATE INITIALIZATION (Execution Order) ---
 
-# CRITICAL: load_tasks is now a cached function, which is fine to call here.
 if 'tasks' not in st.session_state:
     st.session_state.tasks = load_tasks() 
 if 'audit_ran' not in st.session_state:
@@ -303,7 +313,7 @@ with col1:
                 task_start_date = task_dates[0]
                 task_end_date = task_dates[0]
 
-        # --- CRITICAL FIX: Move logic back into the standard form submit block ---
+        # --- Logic back in submit block to prevent double-click validation error ---
         if st.form_submit_button("Add Task"):
             is_valid = True
             if not task_name:
@@ -430,11 +440,20 @@ with col3:
         for i, task in enumerate(st.session_state.tasks):
             col_name_i, col_time_i, col_days_i, col_start_i, col_end_i, col_edit_i, col_delete_i = st.columns([1.5, 0.5, 1.0, 1.0, 1.0, 0.5, 0.5])
 
+            DATE_FORMAT_DISPLAY = "%Y-%m-%d" # Consistent format
+
             with col_name_i: st.markdown(f"**{task['name']}**")
             with col_time_i: st.markdown(f"{task['time']}h")
             with col_days_i: st.markdown(f"<span style='font-size: smaller;'>{', '.join(task['days'])}</span>", unsafe_allow_html=True)
-            with col_start_i: st.markdown(f"<span style='font-size: smaller;'>{task['start']}</span>", unsafe_allow_html=True)
-            with col_end_i: st.markdown(f"<span style='font-size: smaller;'>{task['end']}</span>", unsafe_allow_html=True)
+            
+            # --- Explicitly format date objects for display ---
+            with col_start_i: 
+                start_str = task['start'].strftime(DATE_FORMAT_DISPLAY)
+                st.markdown(f"<span style='font-size: smaller;'>{start_str}</span>", unsafe_allow_html=True)
+            
+            with col_end_i: 
+                end_str = task['end'].strftime(DATE_FORMAT_DISPLAY)
+                st.markdown(f"<span style='font-size: smaller;'>{end_str}</span>", unsafe_allow_html=True)
             
             with col_edit_i:
                 st.button("✏️", key=f"edit_{i}", on_click=lambda i=i: st.session_state.update(edit_index=i)) 
@@ -463,7 +482,7 @@ with col3:
 
         with st.form("edit_task_form", clear_on_submit=False):
             
-            # Pre-fill inputs with current task data
+            # Pre-fill inputs with current task data (and use explicit keys for callback read)
             new_name = st.text_input("Task Name", value=task_to_edit['name'], key='e_name')
             new_time = st.number_input("Unit Task Time (Hours)", value=task_to_edit['time'], min_value=0.1, max_value=MAX_WORK_CAPACITY, step=0.5, key='e_time')
             new_days = st.multiselect("Which days of the week?", options=DAY_OPTIONS, default=task_to_edit['days'], key='e_days')
@@ -474,12 +493,12 @@ with col3:
 
             col_save, col_cancel = st.columns([1, 1])
             
-            # Save button uses callback to trigger persistence
+            # --- CRITICAL FIX: Pass only the index to the callback, which reads all new values from st.session_state via keys ---
             with col_save:
                 if st.form_submit_button("Save Changes", 
                                          on_click=save_edit_callback, 
-                                         args=(task_index_to_edit, new_name, new_time, new_days, new_dates)):
-                    pass # Logic moved to callback
+                                         args=(task_index_to_edit,)): 
+                    pass # Logic is in the callback
             
             with col_cancel:
                 # Cancel button still closes the form
